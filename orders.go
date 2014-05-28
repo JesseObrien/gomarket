@@ -1,4 +1,4 @@
-package gomarket 
+package gomarket
 
 /**
 *
@@ -12,38 +12,39 @@ package gomarket
 *
 *
 *
-*/
+ */
 
 type order interface {
-	execute() bool	
+	execute() bool
 	cancel() bool
-	getOrderId() int64
-	getQuantity() int32
 }
 
-type MarketSellOrder struct {
-	quantity int32
-	orderId int64
+type Order struct {
+	Quantity int64
+	OrderId  int64
+	Price    float64
 }
 
-func NewMarketSellOrder(q int32, o int64) order {
-	return &MarketSellOrder{quantity: q, orderId: o}
+type SellOrder struct {
+	Order
 }
 
-func (m MarketSellOrder) cancel() bool {
+type BuyOrder struct {
+	Order
+}
+
+func NewSellOrder(q int64, o int64) SellOrder {
+	return SellOrder{Order{Quantity: q, OrderId: o}}
+}
+
+func NewBuyOrder(q int64, o int64) BuyOrder {
+	return BuyOrder{Order{Quantity: q, OrderId: o}}
+}
+
+func (m SellOrder) cancel() bool {
 	return true
 }
 
-func (m MarketSellOrder) execute() bool {
-
+func (m SellOrder) execute() bool {
 	return true
 }
-
-func (m MarketSellOrder) getOrderId() int64 {
-	return m.orderId
-}
-
-func (m MarketSellOrder) getQuantity() int32 {
-	return m.quantity
-}
-

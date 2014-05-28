@@ -1,23 +1,23 @@
-package gomarket 
+package gomarket
 
 import (
 	"github.com/garyburd/redigo/redis"
+	"math/rand"
 )
 
+func Init() {
+
+}
+
 type market struct {
-	conn redis.Conn
-	name string
-	buyOrders map[string][]order
-	sellOrders map[string][]order
-	orderId int64
+	conn       redis.Conn
+	name       string
+	buyOrders  map[string][]BuyOrder
+	sellOrders map[string][]SellOrder
+	orderId    int64
 }
 
-func NewSeededMarket() *market {
-	m := NewMarket()
-	return m
-}
-
-func NewMarket() *market{
+func NewMarket() *market {
 	ds, err := redis.Dial("tcp", ":6379")
 
 	if err != nil {
@@ -25,11 +25,21 @@ func NewMarket() *market{
 	}
 
 	return &market{
-		orderId: 0, 
-		buyOrders: make(map[string][]order),
-		sellOrders: make(map[string][]order),
-		conn: ds,
+		orderId:    0,
+		buyOrders:  make(map[string][]BuyOrder),
+		sellOrders: make(map[string][]SellOrder),
+		conn:       ds,
 	}
+}
+
+func (m *market) seedSellOrders(num int64, resource string) {
+	for n := int64(0); n < num; n++ {
+		m.submitSellOrder(int64(rand.Int63n(100)), resource, rand.Float64()*10.0)
+	}
+}
+
+func (m *market) seedBuyOrders(num int64, resource string) {
+
 }
 
 func (m *market) IncrOrderId() {
@@ -40,7 +50,7 @@ func (m *market) IncrOrderId() {
 	}
 }
 
-func (m *market) NextOrderId() int64 {
+func (m *market) nextOrderId() int64 {
 	m.IncrOrderId()
 
 	id, err := redis.Int64(m.conn.Do("GET", "gomarket:globalOrderId"))
@@ -49,19 +59,15 @@ func (m *market) NextOrderId() int64 {
 		panic(err)
 	}
 
-	return id
+	return int64(id)
 }
 
-func (m *market) submitMarketBuyOrder(quantity int32, resourceName string) {
-	
-	m.buyOrders[resourceName] = append(m.buyOrders[resourceName], NewMarketSellOrder(quantity, m.NextOrderId()))
-
-} 
-
-func (m *market) submitMarketSellOrder(quantity int32, resourceName string) {
-
-	m.sellOrders[resourceName] = append(m.sellOrders[resourceName], NewMarketSellOrder(quantity, m.NextOrderId()))
-
+func (m *market) submitMarketBuyOrder(quantity int64, resourceName string) {
+	m.buyOrders[resourceName] = append(m.buyOrders[resourceName], NewBuyOrder(quantity, m.nextOrderId()))
 }
 
+func (m *market) submitSellOrder(quantity int64, resourceName string, price float64) {
 
+	m.sellOrders[resourceName] = append(m.sellOrders[resourceName], NewSellOrder(quantity, m.nextOrderId()))
+
+}

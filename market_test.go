@@ -1,23 +1,31 @@
-package gomarket 
+package gomarket
 
 import (
+	"fmt"
 	"testing"
 )
 
-func TestAddBuyOrder(t *testing.T) {
+func newMarketFactory() *market {
 	m := NewMarket()
-	m.submitMarketSellOrder(20, "coal")
+	m.seedSellOrders(2, "testcoal")
+	m.seedBuyOrders(2, "testcoal")
+	return m
+}
 
-	l := len(m.sellOrders["coal"])
+func TestAddBuyOrder(t *testing.T) {
+	m := newMarketFactory()
 
-	if l != 1 {
+	l := len(m.sellOrders["testcoal"])
+
+	if l != 2 {
 		t.Errorf("Number of coal orders: %v, want %v", l, 1)
 	}
 
-	o := m.sellOrders["coal"][0]
+	o := m.sellOrders["testcoal"][0]
 
-	if o.getQuantity() != 20 {
-		t.Errorf("Quantity: $v, want %v", o.getQuantity(), 20)
+	fmt.Println(o.Price)
+	if o.Quantity < 0 {
+		t.Errorf("Quantity: $v, want %v", o.Quantity, "non-zero")
 	}
 
 }
