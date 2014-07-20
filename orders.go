@@ -13,6 +13,9 @@ package gomarket
 *
 *
  */
+import (
+	"time"
+)
 
 type order interface {
 	execute() bool
@@ -20,9 +23,11 @@ type order interface {
 }
 
 type Order struct {
+	Symbol   string
 	Quantity int64
 	OrderId  int64
 	Price    float64
+	Time     time.Time
 }
 
 type SellOrder struct {
@@ -33,12 +38,14 @@ type BuyOrder struct {
 	Order
 }
 
-func NewSellOrder(q int64, o int64) SellOrder {
-	return SellOrder{Order{Quantity: q, OrderId: o}}
+func NewSellOrder(s string, q int64, oid int64) SellOrder {
+	t := time.Now()
+	return SellOrder{Order{Symbol: s, Quantity: q, OrderId: oid, Time: t.UTC()}}
 }
 
-func NewBuyOrder(q int64, o int64) BuyOrder {
-	return BuyOrder{Order{Quantity: q, OrderId: o}}
+func NewBuyOrder(s string, q int64, oid int64) BuyOrder {
+	t := time.Now()
+	return BuyOrder{Order{Symbol: s, Quantity: q, OrderId: oid, Time: t.UTC()}}
 }
 
 func (m SellOrder) cancel() bool {

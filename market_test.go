@@ -7,21 +7,21 @@ import (
 
 func newMarketFactory() *market {
 	m := NewMarket()
-	m.seedSellOrders(2, "testcoal")
-	m.seedBuyOrders(2, "testcoal")
+	m.seedSellOrders(2, "JOBR")
+	m.seedBuyOrders(2, "JOBR")
 	return m
 }
 
 func TestAddBuyOrder(t *testing.T) {
 	m := newMarketFactory()
 
-	l := len(m.sellOrders["testcoal"])
+	l := len(m.sellOrders["JOBR"])
 
 	if l != 2 {
-		t.Errorf("Number of coal orders: %v, want %v", l, 1)
+		t.Errorf("Number of sell orders: %v, want %v", l, 1)
 	}
 
-	o := m.sellOrders["testcoal"][0]
+	o := m.sellOrders["JOBR"][0]
 
 	fmt.Println(o.Price)
 	if o.Quantity < 0 {
