@@ -5,23 +5,24 @@ import (
 	"testing"
 )
 
-func newMarketFactory() *market {
-	m := NewMarket()
+func newMarketSeederFactory() *marketseeder {
+	m := NewMarketSeeder()
+	m.seedSymbols()
 	m.seedSellOrders(2, "JOBR")
 	m.seedBuyOrders(2, "JOBR")
 	return m
 }
 
 func TestAddBuyOrder(t *testing.T) {
-	m := newMarketFactory()
+	m := newMarketSeederFactory()
 
-	l := len(m.sellOrders["JOBR"])
+	l := len(m.market.sellOrders["JOBR"])
 
 	if l != 2 {
 		t.Errorf("Number of sell orders: %v, want %v", l, 1)
 	}
 
-	o := m.sellOrders["JOBR"][0]
+	o := m.market.sellOrders["JOBR"][0]
 
 	fmt.Println(o.Price)
 	if o.Quantity < 0 {

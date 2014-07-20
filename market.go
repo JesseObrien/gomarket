@@ -2,13 +2,22 @@ package gomarket
 
 import (
 	"github.com/garyburd/redigo/redis"
-	"math/rand"
 	"strconv"
 	"strings"
 )
 
 func Init() {
 
+}
+
+func NewRedisConnection() redis.Conn {
+	c, err := redis.Dial("tcp", ":6379")
+
+	if err != nil {
+		panic(err)
+	}
+
+	return c
 }
 
 type market struct {
@@ -20,28 +29,12 @@ type market struct {
 }
 
 func NewMarket() *market {
-	ds, err := redis.Dial("tcp", ":6379")
-
-	if err != nil {
-		panic(err)
-	}
-
 	return &market{
 		orderId:    0,
 		buyOrders:  make(map[string][]BuyOrder),
 		sellOrders: make(map[string][]SellOrder),
-		conn:       ds,
+		conn:       NewRedisConnection(),
 	}
-}
-
-func (m *market) seedSellOrders(num int64, resource string) {
-	for n := int64(0); n < num; n++ {
-		m.submitSellOrder(int64(rand.Int63n(100)), resource, rand.Float64()*10.0)
-	}
-}
-
-func (m *market) seedBuyOrders(num int64, resource string) {
-
 }
 
 func (m *market) IncrOrderId() {
