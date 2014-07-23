@@ -2,8 +2,6 @@ package gomarket
 
 import (
 	"github.com/garyburd/redigo/redis"
-	"strconv"
-	"strings"
 )
 
 func Init() {
@@ -21,7 +19,7 @@ func NewRedisConnection() redis.Conn {
 }
 
 type market struct {
-	conn       redis.Conn
+	redis      redis.Conn
 	name       string
 	buyOrders  map[string][]BuyOrder
 	sellOrders map[string][]SellOrder
@@ -33,36 +31,37 @@ func NewMarket() *market {
 		orderId:    0,
 		buyOrders:  make(map[string][]BuyOrder),
 		sellOrders: make(map[string][]SellOrder),
-		conn:       NewRedisConnection(),
+		redis:      NewRedisConnection(),
 	}
 }
 
-func (m *market) IncrOrderId() {
-	_, err := m.conn.Do("INCR", "gomarket:globalOrderId")
+func (m *market) ListSymbol(s Symbol) {
+	// Add the symbol to the symbols set
+	m.redis.Send("SADD", redisKey("symbols"), s.Name)
 
-	if err != nil {
-		panic(err)
-	}
-}
+	// Add the symbol object to a hash
+	m.redis.Send("HMSET", redis.Args{}.Add(redisKey("symbols:"+s.Name)).AddFlat(&s))
 
-func (m *market) nextOrderId() int64 {
-	m.IncrOrderId()
+	m.redis.Flush()
 
-	id, err := redis.Int64(m.conn.Do("GET", "gomarket:globalOrderId"))
-
-	if err != nil {
+	if _, err := m.redis.Receive(); err != nil {
 		panic(err)
 	}
 
-	return int64(id)
 }
 
-func (m *market) IncrSymbolOrderId(symbol string) int64 {
-	m.conn.Send("INCR", "gomarket:"+symbol+":uOrderId")
-	m.conn.Send("GET", "gomarket:"+symbol+":uOrderId")
+func (m *market) DelistSymbol(s Symbol) {
 
-	m.conn.Flush()
-	id, err := redis.Int64(m.conn.Receive())
+}
+
+func (m *market) NextTransactionId() int64 {
+
+	m.redis.Send("INCR", redisKey("globalTransactionId"))
+	m.redis.Send("GET", redisKey("gomarket:globalTransactionId"))
+
+	m.redis.Flush()
+
+	id, err := redis.Int64(m.redis.Receive())
 
 	if err != nil {
 		panic(err)
@@ -73,34 +72,19 @@ func (m *market) IncrSymbolOrderId(symbol string) int64 {
 
 func (m *market) submitMarketBuyOrder(quantity int64, symbol string) {
 
-	s := strings.ToUpper(symbol)
-	orderid := m.IncrSymbolOrderId(s)
+	//	s := strings.ToUpper(symbol)
 
-	m.buyOrders[symbol] = append(m.buyOrders[symbol], NewBuyOrder(s, quantity, orderid))
+	//	m.buyOrders[symbol] = append(m.buyOrders[symbol], NewBuyOrder(s, quantity, orderid))
 }
 
 func (m *market) submitSellOrder(quantity int64, symbol string, price float64) {
 
-	// Straighte up the symbol
-	s := strings.ToUpper(symbol)
-	// Get a new order id
-	orderid := m.IncrSymbolOrderId(s)
-
 	// Build a new sell order and then append it to the sell orders list
-	so := NewSellOrder(s, quantity, orderid)
-	m.sellOrders[symbol] = append(m.sellOrders[s], so)
+	so := NewSellOrder(symbol, quantity)
 
-	orderIdStr := strconv.FormatInt(orderid, 10)
+	m.sellOrders[so.GetSymbol()] = append(m.sellOrders[so.GetSymbol()], so)
 
 	// Record sell order in redis hash
-	m.conn.Send("LPUSH", "gomarket:sellorders:"+s, orderIdStr)
-	m.conn.Send("HMSET", redis.Args{}.Add("gomarket:sellorders:"+s+":"+orderIdStr).AddFlat(&so)...)
 
-	m.conn.Flush()
-	_, err := m.conn.Receive()
-
-	if err != nil {
-		panic(err)
-	}
-
+	so.Record()
 }

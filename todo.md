@@ -9,3 +9,12 @@
 
 ### Other
 Then have the bid price be a couple cents lower than the ask so it costs more to buy the shares than you get by selling them. Put a small commission on every trade, and let 'er go'.
+
+
+### Symbols
+
+    gomarket:symbols # Set of all symbols
+    gomarket:symbols:JOBR # Hash 
+    gomarket:symbols:JOBR:listed # Bit
+    gomarket:sellorders:JOBR
+    gomarket:sellorders:JOBR:123456
