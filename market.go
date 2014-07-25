@@ -2,6 +2,7 @@ package gomarket
 
 import (
 	"github.com/garyburd/redigo/redis"
+	"log"
 )
 
 func Init() {
@@ -12,7 +13,7 @@ func NewRedisConnection() redis.Conn {
 	c, err := redis.Dial("tcp", ":6379")
 
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	return c
@@ -36,6 +37,7 @@ func NewMarket() *market {
 }
 
 func (m *market) ListSymbol(s Symbol) {
+
 	// Add the symbol to the symbols set
 	m.redis.Send("SADD", redisKey("symbols"), s.Name)
 
@@ -43,10 +45,6 @@ func (m *market) ListSymbol(s Symbol) {
 	m.redis.Send("HMSET", redis.Args{}.Add(redisKey("symbols:"+s.Name)).AddFlat(&s))
 
 	m.redis.Flush()
-
-	if _, err := m.redis.Receive(); err != nil {
-		panic(err)
-	}
 
 }
 
@@ -56,15 +54,10 @@ func (m *market) DelistSymbol(s Symbol) {
 
 func (m *market) NextTransactionId() int64 {
 
-	m.redis.Send("INCR", redisKey("globalTransactionId"))
-	m.redis.Send("GET", redisKey("gomarket:globalTransactionId"))
-
-	m.redis.Flush()
-
-	id, err := redis.Int64(m.redis.Receive())
+	id, err := redis.Int64(m.redis.Do("INCR", redisKey("globalTransactionId")))
 
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	return id
@@ -72,19 +65,21 @@ func (m *market) NextTransactionId() int64 {
 
 func (m *market) submitMarketBuyOrder(quantity int64, symbol string) {
 
-	//	s := strings.ToUpper(symbol)
+	bo := NewBuyOrder(symbol, quantity)
 
-	//	m.buyOrders[symbol] = append(m.buyOrders[symbol], NewBuyOrder(s, quantity, orderid))
+	m.buyOrders[symbol] = append(m.buyOrders[bo.GetSymbol()], bo)
 }
 
-func (m *market) submitSellOrder(quantity int64, symbol string, price float64) {
+func (m *market) submitSellOrder(quantity int64, symbol string, price int64) {
 
 	// Build a new sell order and then append it to the sell orders list
-	so := NewSellOrder(symbol, quantity)
+	so := NewSellOrder(symbol, quantity, price)
 
 	m.sellOrders[so.GetSymbol()] = append(m.sellOrders[so.GetSymbol()], so)
 
 	// Record sell order in redis hash
 
-	so.Record()
+	if err := so.Record(); err != nil {
+		log.Fatal(err)
+	}
 }

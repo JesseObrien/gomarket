@@ -8,8 +8,8 @@ import (
 func newMarketSeederFactory() *marketseeder {
 	m := NewMarketSeeder()
 	m.seedSymbols()
-	m.seedSellOrders(2, "JOBR")
-	m.seedBuyOrders(2, "JOBR")
+	m.seedSellOrders(2, "jobr")
+	m.seedBuyOrders(2, "jobr")
 	return m
 }
 

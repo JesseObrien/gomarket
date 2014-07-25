@@ -47,12 +47,13 @@ func (ms *marketseeder) seedBuyOrders(num int64, resource string) {
 
 func (ms *marketseeder) seedSellOrders(num int64, resource string) {
 	for n := int64(0); n < num; n++ {
-		ms.market.submitSellOrder(int64(rand.Int63n(100)), resource, rand.Float64()*10.0)
+		ms.market.submitSellOrder(int64(rand.Int63n(100)), resource, rand.Int63()*10.0)
 	}
 }
 
 func (ms *marketseeder) makeSymbol() string {
 
+	// @TODO Make this return only alphabet characters
 	s := ms.faker.Characters(4)
 
 	return strings.ToUpper(s)
